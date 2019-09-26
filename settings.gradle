@@ -1,2 +1,2 @@
 include ':app'
-rootProject.name='Location-Android'
+rootProject.name='Location'

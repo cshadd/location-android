@@ -1,4 +1,4 @@
-package io.github.cshadd.location_android;
+package io.github.cshadd.location;
 
 import android.content.Context;
 
@@ -22,6 +22,6 @@ public class ExampleInstrumentedTest {
         // Context of the app under test.
         Context appContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
 
-        assertEquals("io.github.cshadd.location_android", appContext.getPackageName());
+        assertEquals("io.github.cshadd.location", appContext.getPackageName());
     }
 }

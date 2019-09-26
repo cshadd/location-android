@@ -1,3 +1,7 @@
 <resources>
-    <string name="app_name">Location-Android</string>
+    <string name="app_name">Location</string>
+    <string name="title_activity_main">Location</string>
+
+    <string name="latitude">Current Latitude: %1$f</string>
+    <string name="longitude">Current Longitude: %1$f</string>
 </resources>

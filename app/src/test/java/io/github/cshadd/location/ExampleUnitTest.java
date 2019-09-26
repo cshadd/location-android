@@ -1,4 +1,4 @@
-package io.github.cshadd.location_android;
+package io.github.cshadd.location;
 
 import org.junit.Test;
 
