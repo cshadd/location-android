@@ -2,6 +2,10 @@
     <string name="app_name">Location</string>
     <string name="title_activity_main">Location</string>
 
-    <string name="latitude">Current Latitude: %1$f</string>
-    <string name="longitude">Current Longitude: %1$f</string>
+    <string name="altitude">Altitude: %1$f m</string>
+    <string name="distance">Distance Traveled: %1$f m</string>
+    <string name="latitude">Latitude: %1$f &#176;</string>
+    <string name="location">Location Name: %1$s</string>
+    <string name="light">Average Light Sensor Value: %1$f lux</string>
+    <string name="longitude">Longitude: %1$f &#176;</string>
 </resources>
