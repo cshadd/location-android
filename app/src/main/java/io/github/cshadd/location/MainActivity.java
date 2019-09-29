@@ -80,9 +80,6 @@ public class MainActivity extends AppCompatActivity {
         if (sensorList.size() > 0) {
             this.lightSensor = sensorList.get(0);
         }
-        else {
-
-        }
 
         this.textAltitude = (TextView)findViewById(R.id.altitude);
         this.textDistance = (TextView)findViewById(R.id.distance);
