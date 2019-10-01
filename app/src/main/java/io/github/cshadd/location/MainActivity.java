@@ -34,7 +34,7 @@ import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity {
     private static final int MAX_LIGHT_STORAGE = 5000;
-    private static final float RADIUS = 100;
+    private static final float RADIUS = 30;
 
     private Location currentLocation;
     private Geocoder geocoder;
@@ -49,6 +49,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView textAltitude;
     private TextView textDistance;
     private TextView textLastAltitude;
+    private TextView textLastAverageLight;
     private TextView textLastLatitude;
     private TextView textLastLocation;
     private TextView textLastLongitude;
@@ -143,6 +144,7 @@ public class MainActivity extends AppCompatActivity {
         this.textAltitude = (TextView)findViewById(R.id.altitude);
         this.textDistance = (TextView)findViewById(R.id.distance);
         this.textLastAltitude = (TextView)findViewById(R.id.last_altitude);
+        this.textLastAverageLight = (TextView)findViewById(R.id.last_average_light);
         this.textLastLatitude = (TextView)findViewById(R.id.last_latitude);
         this.textLastLocation = (TextView)findViewById(R.id.last_location);
         this.textLastLongitude = (TextView)findViewById(R.id.last_longitude);
@@ -183,8 +185,7 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 lightValues.add(light);
-                final Float lightAverage = computeAverage(lightValues);
-                textLight.setText(res.getString(R.string.light, lightAverage));
+                textLight.setText(res.getString(R.string.light, light));
             }
         };
 
@@ -217,6 +218,7 @@ public class MainActivity extends AppCompatActivity {
 
                 if (lastLocation == null) {
                     resetLastLocation(currentLocation);
+                    textLastAverageLight.setText(res.getString(R.string.last_average_light, 0f));
                 }
 
                 final double lastAltitude = lastLocation.getAltitude();
@@ -234,6 +236,7 @@ public class MainActivity extends AppCompatActivity {
                 if (distance >= RADIUS) {
                     distance = RADIUS;
                     resetLastLocation(currentLocation);
+                    textLastAverageLight.setText(res.getString(R.string.last_average_light, computeAverage(lightValues)));
                     lightValues.clear();
                     Log.i("NOGA", "Resetting location!");
                 }

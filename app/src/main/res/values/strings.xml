@@ -8,11 +8,12 @@
     <string name="altitude">Altitude: %1$f m</string>
     <string name="distance">Distance Traveled: %1$f m / %2$f m</string>
     <string name="last_altitude">Last Altitude: %1$f m</string>
+    <string name="last_average_light">Last Average Light Sensor Value: %1$f lux</string>
     <string name="last_latitude">Last Latitude: %1$f &#176;</string>
     <string name="last_location">Last Location Name:\n%1$s</string>
     <string name="last_longitude">Last Longitude: %1$f &#176;</string>
     <string name="latitude">Latitude: %1$f &#176;</string>
-    <string name="light">Average Light Sensor Value: %1$f lux</string>
+    <string name="light">Light Sensor Value: %1$f lux</string>
     <string name="location">Location Name:\n%1$s</string>
     <string name="longitude">Longitude: %1$f &#176;</string>
 </resources>
