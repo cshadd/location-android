@@ -356,18 +356,25 @@ public class MainActivity
 
                 if (lastLocation == null) {
                     resetLastLocation(currentLocation);
-                    textLastAverageLight1.setText(res.getString(R.string.last_average_light, 1, 0f));
-                    textLastAverageLight2.setText(res.getString(R.string.last_average_light, 2, 0f));
-                    textLastAverageLight3.setText(res.getString(R.string.last_average_light, 3, 0f));
-                    textLastAverageLight4.setText(res.getString(R.string.last_average_light, 4, 0f));
-                    textLastAverageLight5.setText(res.getString(R.string.last_average_light, 5, 0f));
-
-                    textLastLocation1.setText(res.getString(R.string.last_location, 1, "NaN"));
-                    textLastLocation2.setText(res.getString(R.string.last_location, 2, "NaN"));
-                    textLastLocation3.setText(res.getString(R.string.last_location, 3, "NaN"));
-                    textLastLocation4.setText(res.getString(R.string.last_location, 4, "NaN"));
-                    textLastLocation5.setText(res.getString(R.string.last_location, 5, "NaN"));
                 }
+
+                final HistoricalElement h1 = history.get(0);
+                final HistoricalElement h2 = history.get(1);
+                final HistoricalElement h3 = history.get(2);
+                final HistoricalElement h4 = history.get(3);
+                final HistoricalElement h5 = history.get(4);
+
+                textLastAverageLight1.setText(res.getString(R.string.last_average_light, 1, h1.light));
+                textLastAverageLight2.setText(res.getString(R.string.last_average_light, 2, h2.light));
+                textLastAverageLight3.setText(res.getString(R.string.last_average_light, 3, h3.light));
+                textLastAverageLight4.setText(res.getString(R.string.last_average_light, 4, h4.light));
+                textLastAverageLight5.setText(res.getString(R.string.last_average_light, 5, h5.light));
+
+                textLastLocation1.setText(res.getString(R.string.last_location, 1, h1.location));
+                textLastLocation2.setText(res.getString(R.string.last_location, 2, h2.location));
+                textLastLocation3.setText(res.getString(R.string.last_location, 3, h3.location));
+                textLastLocation4.setText(res.getString(R.string.last_location, 4, h4.location));
+                textLastLocation5.setText(res.getString(R.string.last_location, 5, h5.location));
 
                 float distance = lastLocation.distanceTo(currentLocation);
                 if (distance >= RADIUS) {
@@ -378,24 +385,6 @@ public class MainActivity
                     history.add(0, new HistoricalElement(computeAverage(lightValues),
                             computeLocationName(currentLocation)));
                     resetLastLocation(currentLocation);
-
-                    final HistoricalElement h1 = history.get(0);
-                    final HistoricalElement h2 = history.get(1);
-                    final HistoricalElement h3 = history.get(2);
-                    final HistoricalElement h4 = history.get(3);
-                    final HistoricalElement h5 = history.get(4);
-
-                    textLastAverageLight1.setText(res.getString(R.string.last_average_light, 1, h1.light));
-                    textLastAverageLight2.setText(res.getString(R.string.last_average_light, 2, h2.light));
-                    textLastAverageLight3.setText(res.getString(R.string.last_average_light, 3, h3.light));
-                    textLastAverageLight4.setText(res.getString(R.string.last_average_light, 4, h4.light));
-                    textLastAverageLight5.setText(res.getString(R.string.last_average_light, 5, h5.light));
-
-                    textLastLocation1.setText(res.getString(R.string.last_location, 1, h1.location));
-                    textLastLocation2.setText(res.getString(R.string.last_location, 2, h2.location));
-                    textLastLocation3.setText(res.getString(R.string.last_location, 3, h3.location));
-                    textLastLocation4.setText(res.getString(R.string.last_location, 4, h4.location));
-                    textLastLocation5.setText(res.getString(R.string.last_location, 5, h5.location));
                     lightValues.clear();
                 }
 
