@@ -22,37 +22,63 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.widget.TextView;
-
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
-
+import com.mapbox.android.core.location.LocationEngine;
+import com.mapbox.android.core.location.LocationEngineCallback;
+import com.mapbox.android.core.location.LocationEngineProvider;
+import com.mapbox.android.core.location.LocationEngineRequest;
+import com.mapbox.android.core.location.LocationEngineResult;
+import com.mapbox.mapboxsdk.Mapbox;
+import com.mapbox.mapboxsdk.camera.CameraPosition;
+import com.mapbox.mapboxsdk.location.LocationComponent;
+import com.mapbox.mapboxsdk.location.LocationComponentActivationOptions;
+import com.mapbox.mapboxsdk.location.modes.CameraMode;
+import com.mapbox.mapboxsdk.location.modes.RenderMode;
+import com.mapbox.mapboxsdk.maps.MapView;
+import com.mapbox.mapboxsdk.maps.MapboxMap;
+import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
+import com.mapbox.mapboxsdk.maps.Style;
 import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Queue;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity
+        extends AppCompatActivity {
     private static final int MAX_LIGHT_STORAGE = 5000;
     private static final float RADIUS = 30;
 
     private Location currentLocation;
     private Geocoder geocoder;
+    private List<HistoricalElement> history;
     private Location lastLocation;
     private List<Float> lightValues;
     private Sensor lightSensor;
     private SensorEventListener lightSensorListener;
+    private LocationEngine locationEngine;
     private LocationListener locationListener;
     private LocationManager locationManager;
+    private MapboxMap mapboxMap;
+    private MainActivityLocationCallback mapCallback;
+    private MapView mapView;
     private Resources res;
     private SensorManager sensorManager;
     private TextView textAltitude;
     private TextView textDistance;
-    private TextView textLastAltitude;
-    private TextView textLastAverageLight;
-    private TextView textLastLatitude;
-    private TextView textLastLocation;
-    private TextView textLastLongitude;
+    private TextView textLastAverageLight1;
+    private TextView textLastAverageLight2;
+    private TextView textLastAverageLight3;
+    private TextView textLastAverageLight4;
+    private TextView textLastAverageLight5;
+    private TextView textLastLocation1;
+    private TextView textLastLocation2;
+    private TextView textLastLocation3;
+    private TextView textLastLocation4;
+    private TextView textLastLocation5;
     private TextView textLatitude;
     private TextView textLight;
     private TextView textLocation;
@@ -70,7 +96,38 @@ public class MainActivity extends AppCompatActivity {
         return;
     }
 
-    private Float computeAverage(List<Float> values) {
+    private static class MainActivityLocationCallback
+            implements LocationEngineCallback<LocationEngineResult> {
+
+        private final WeakReference<MainActivity> activityWeakReference;
+
+        public MainActivityLocationCallback(MainActivity activity) {
+            this.activityWeakReference = new WeakReference<>(activity);
+            return;
+        }
+
+        @Override
+        public void onSuccess(LocationEngineResult result) {
+            final MainActivity activity = this.activityWeakReference.get();
+            if (activity != null) {
+                final Location location = result.getLastLocation();
+
+                if (location != null) {
+                    activity.mapboxMap.getLocationComponent().forceLocationUpdate(result.getLastLocation());
+                }
+            }
+            return;
+        }
+
+        @Override
+        public void onFailure(Exception exception) {
+            Log.e("NOGA", "Could not process map!");
+            exception.printStackTrace();
+            return;
+        }
+    }
+
+        private Float computeAverage(List<Float> values) {
         Float sum = 0f;
         if (!values.isEmpty()) {
             for (Float value : values) {
@@ -79,6 +136,16 @@ public class MainActivity extends AppCompatActivity {
             return sum / values.size();
         }
         return sum;
+    }
+
+    private void clearHistory() {
+        this.history.clear();
+        history.add(new HistoricalElement());
+        history.add(new HistoricalElement());
+        history.add(new HistoricalElement());
+        history.add(new HistoricalElement());
+        history.add(new HistoricalElement());
+        return;
     }
 
     private String computeLocationName(Location loc) {
@@ -100,6 +167,38 @@ public class MainActivity extends AppCompatActivity {
         return "NaN";
     }
 
+    private void enableMapLocationComponent(Style loadedMapStyle) {
+        if (ActivityCompat.checkSelfPermission(this, this.PERMISSIONS[0])
+                == PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(this, this.PERMISSIONS[1])
+                == PackageManager.PERMISSION_GRANTED) {
+
+            final LocationComponent locationComponent = this.mapboxMap.getLocationComponent();
+            final LocationComponentActivationOptions locationComponentActivationOptions =
+                    LocationComponentActivationOptions.builder(this, loadedMapStyle)
+                            .useDefaultLocationEngine(false)
+                            .build();
+            locationComponent.activateLocationComponent(locationComponentActivationOptions);
+            locationComponent.setLocationComponentEnabled(true);
+            locationComponent.setCameraMode(CameraMode.TRACKING);
+            locationComponent.setRenderMode(RenderMode.COMPASS);
+
+            this.initLocationEngine();
+        }
+        return;
+    }
+
+    private void initLocationEngine() {
+        this.locationEngine = LocationEngineProvider.getBestLocationEngine(this);
+
+        final LocationEngineRequest request = new LocationEngineRequest.Builder(1000L)
+                .setPriority(LocationEngineRequest.PRIORITY_HIGH_ACCURACY)
+                .setMaxWaitTime(5000L).build();
+
+        locationEngine.requestLocationUpdates(request, this.mapCallback, super.getMainLooper());
+        locationEngine.getLastLocation(this.mapCallback);
+    }
+
     private void resetLastLocation(Location loc) {
         this.lastLocation = null;
         if (loc != null) {
@@ -108,6 +207,7 @@ public class MainActivity extends AppCompatActivity {
             this.lastLocation.setLatitude(loc.getLatitude());
             this.lastLocation.setLongitude(loc.getLongitude());
         }
+        Log.i("NOGA", "Resetting location!");
         this.vibrate(500);
         return;
     }
@@ -127,31 +227,68 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+
+        Mapbox.getInstance(this, this.getString(R.string.mapbox_access_token));
+
+        super.setContentView(R.layout.activity_main);
 
         this.currentLocation = new Location("Point B");
         this.geocoder = new Geocoder(this, Locale.getDefault());
-        this.locationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
-        this.res = getResources();
+        this.history = new LinkedList<>();
+        this.clearHistory();
+
+        this.locationManager = (LocationManager)super.getSystemService(Context.LOCATION_SERVICE);
+
+        this.mapCallback = new MainActivityLocationCallback(this);
+        this.mapView = (MapView)findViewById(R.id.mapView);
+        this.mapView.onCreate(savedInstanceState);
+
+        final Style.OnStyleLoaded mapViewStyleLoaded = new Style.OnStyleLoaded() {
+            @Override
+            public void onStyleLoaded(Style style) {
+                enableMapLocationComponent(style);
+                return;
+            }
+        };
+
+        final OnMapReadyCallback mapViewReadyCallback = new OnMapReadyCallback() {
+            @Override
+            public void onMapReady(MapboxMap map) {
+                mapboxMap = map;
+                mapboxMap.setCameraPosition(new CameraPosition.Builder().zoom(17).build());
+                mapboxMap.setStyle(Style.MAPBOX_STREETS, mapViewStyleLoaded);
+                return;
+            }
+        };
+
+        this.mapView.getMapAsync(mapViewReadyCallback);
+
+        this.res = super.getResources();
         this.sensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
-        this.vibrator = (Vibrator)this.getSystemService(Context.VIBRATOR_SERVICE);
 
         final List<Sensor> sensorList = sensorManager.getSensorList(Sensor.TYPE_LIGHT);
         if (sensorList.size() > 0) {
             this.lightSensor = sensorList.get(0);
         }
 
-        this.textAltitude = (TextView)findViewById(R.id.altitude);
-        this.textDistance = (TextView)findViewById(R.id.distance);
-        this.textLastAltitude = (TextView)findViewById(R.id.last_altitude);
-        this.textLastAverageLight = (TextView)findViewById(R.id.last_average_light);
-        this.textLastLatitude = (TextView)findViewById(R.id.last_latitude);
-        this.textLastLocation = (TextView)findViewById(R.id.last_location);
-        this.textLastLongitude = (TextView)findViewById(R.id.last_longitude);
-        this.textLatitude = (TextView)findViewById(R.id.latitude);
-        this.textLight = (TextView)findViewById(R.id.light);
-        this.textLocation = (TextView)findViewById(R.id.location);
-        this.textLongitude = (TextView)findViewById(R.id.longitude);
+        this.textAltitude = (TextView)super.findViewById(R.id.altitude);
+        this.textDistance = (TextView)super.findViewById(R.id.distance);
+        this.textLastAverageLight1 = (TextView)super.findViewById(R.id.last_average_light_1);
+        this.textLastAverageLight2 = (TextView)super.findViewById(R.id.last_average_light_2);
+        this.textLastAverageLight3 = (TextView)super.findViewById(R.id.last_average_light_3);
+        this.textLastAverageLight4 = (TextView)super.findViewById(R.id.last_average_light_4);
+        this.textLastAverageLight5 = (TextView)super.findViewById(R.id.last_average_light_5);
+        this.textLastLocation1 = (TextView)super.findViewById(R.id.last_location_1);
+        this.textLastLocation2 = (TextView)super.findViewById(R.id.last_location_2);
+        this.textLastLocation3 = (TextView)super.findViewById(R.id.last_location_3);
+        this.textLastLocation4 = (TextView)super.findViewById(R.id.last_location_4);
+        this.textLastLocation5 = (TextView)super.findViewById(R.id.last_location_5);
+        this.textLatitude = (TextView)super.findViewById(R.id.latitude);
+        this.textLight = (TextView)super.findViewById(R.id.light);
+        this.textLocation = (TextView)super.findViewById(R.id.location);
+        this.textLongitude = (TextView)super.findViewById(R.id.longitude);
+
+        this.vibrator = (Vibrator)super.getSystemService(Context.VIBRATOR_SERVICE);
 
         if (ContextCompat.checkSelfPermission(this, this.PERMISSIONS[0])
                 != PackageManager.PERMISSION_GRANTED &&
@@ -162,7 +299,8 @@ public class MainActivity extends AppCompatActivity {
                     && ActivityCompat.shouldShowRequestPermissionRationale(this,
                     this.PERMISSIONS[1])) {
                 Log.w("NOGA", "Requesting permissions!");
-            } else {
+            }
+            else {
                 ActivityCompat.requestPermissions(this, PERMISSIONS, 1);
                 Log.w("NOGA", "Requesting permissions!");
             }
@@ -218,27 +356,47 @@ public class MainActivity extends AppCompatActivity {
 
                 if (lastLocation == null) {
                     resetLastLocation(currentLocation);
-                    textLastAverageLight.setText(res.getString(R.string.last_average_light, 0f));
+                    textLastAverageLight1.setText(res.getString(R.string.last_average_light, 1, 0f));
+                    textLastAverageLight2.setText(res.getString(R.string.last_average_light, 2, 0f));
+                    textLastAverageLight3.setText(res.getString(R.string.last_average_light, 3, 0f));
+                    textLastAverageLight4.setText(res.getString(R.string.last_average_light, 4, 0f));
+                    textLastAverageLight5.setText(res.getString(R.string.last_average_light, 5, 0f));
+
+                    textLastLocation1.setText(res.getString(R.string.last_location, 1, "NaN"));
+                    textLastLocation2.setText(res.getString(R.string.last_location, 2, "NaN"));
+                    textLastLocation3.setText(res.getString(R.string.last_location, 3, "NaN"));
+                    textLastLocation4.setText(res.getString(R.string.last_location, 4, "NaN"));
+                    textLastLocation5.setText(res.getString(R.string.last_location, 5, "NaN"));
                 }
 
-                final double lastAltitude = lastLocation.getAltitude();
-                final double lastLatitude = lastLocation.getLatitude();
-                final String lastLocationName = computeLocationName(lastLocation);
-                final double lastLongitude = lastLocation.getLongitude();
-
-                textLastAltitude.setText(res.getString(R.string.last_altitude, lastAltitude));
-                textLastLatitude.setText(res.getString(R.string.last_latitude, lastLatitude));
-                textLastLocation.setText(res.getString(R.string.last_location, lastLocationName));
-                textLastLongitude.setText(res.getString(R.string.last_longitude, lastLongitude));
-
                 float distance = lastLocation.distanceTo(currentLocation);
-
                 if (distance >= RADIUS) {
                     distance = RADIUS;
+                    if (history.size() >= 5) {
+                        history.remove(4);
+                    }
+                    history.add(0, new HistoricalElement(computeAverage(lightValues),
+                            computeLocationName(currentLocation)));
                     resetLastLocation(currentLocation);
-                    textLastAverageLight.setText(res.getString(R.string.last_average_light, computeAverage(lightValues)));
+
+                    final HistoricalElement h1 = history.get(0);
+                    final HistoricalElement h2 = history.get(1);
+                    final HistoricalElement h3 = history.get(2);
+                    final HistoricalElement h4 = history.get(3);
+                    final HistoricalElement h5 = history.get(4);
+
+                    textLastAverageLight1.setText(res.getString(R.string.last_average_light, 1, h1.light));
+                    textLastAverageLight2.setText(res.getString(R.string.last_average_light, 2, h2.light));
+                    textLastAverageLight3.setText(res.getString(R.string.last_average_light, 3, h3.light));
+                    textLastAverageLight4.setText(res.getString(R.string.last_average_light, 4, h4.light));
+                    textLastAverageLight5.setText(res.getString(R.string.last_average_light, 5, h5.light));
+
+                    textLastLocation1.setText(res.getString(R.string.last_location, 1, h1.location));
+                    textLastLocation2.setText(res.getString(R.string.last_location, 2, h2.location));
+                    textLastLocation3.setText(res.getString(R.string.last_location, 3, h3.location));
+                    textLastLocation4.setText(res.getString(R.string.last_location, 4, h4.location));
+                    textLastLocation5.setText(res.getString(R.string.last_location, 5, h5.location));
                     lightValues.clear();
-                    Log.i("NOGA", "Resetting location!");
                 }
 
                 textDistance.setText(res.getString(R.string.distance, distance, RADIUS));
@@ -264,6 +422,23 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (this.locationEngine != null) {
+            this.locationEngine.removeLocationUpdates(this.mapCallback);
+        }
+        this.mapView.onDestroy();
+        return;
+    }
+
+
+    @Override
+    public void onLowMemory() {
+        super.onLowMemory();
+        this.mapView.onLowMemory();
+    }
+
+    @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         super.onOptionsItemSelected(item);
         final int id = item.getItemId();
@@ -276,6 +451,7 @@ public class MainActivity extends AppCompatActivity {
         }
         else if (id == R.id.action_reset) {
             this.resetLastLocation(this.currentLocation);
+            this.clearHistory();
         }
         else {
             return super.onOptionsItemSelected(item);
@@ -286,9 +462,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        if (ActivityCompat.checkSelfPermission(getApplicationContext(), this.PERMISSIONS[0])
+        this.mapView.onResume();
+        if (ActivityCompat.checkSelfPermission(this, this.PERMISSIONS[0])
                 == PackageManager.PERMISSION_GRANTED
-                && ActivityCompat.checkSelfPermission(getApplicationContext(), this.PERMISSIONS[1])
+                && ActivityCompat.checkSelfPermission(this, this.PERMISSIONS[1])
                 == PackageManager.PERMISSION_GRANTED) {
             this.locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
                     500, 1, this.locationListener);
@@ -296,17 +473,26 @@ public class MainActivity extends AppCompatActivity {
                     500, 1, this.locationListener);
         }
         if (this.lightSensor != null) {
-            this.sensorManager.registerListener(this.lightSensorListener, this.lightSensor, SensorManager.SENSOR_DELAY_NORMAL);
+            this.sensorManager.registerListener(this.lightSensorListener,
+                    this.lightSensor, SensorManager.SENSOR_DELAY_NORMAL);
         }
+        return;
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        this.mapView.onStart();
         return;
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        if (ActivityCompat.checkSelfPermission(getApplicationContext(), this.PERMISSIONS[0])
+        this.mapView.onStop();
+        if (ActivityCompat.checkSelfPermission(this, this.PERMISSIONS[0])
                 == PackageManager.PERMISSION_GRANTED
-                && ActivityCompat.checkSelfPermission(getApplicationContext(), this.PERMISSIONS[1])
+                && ActivityCompat.checkSelfPermission(this, this.PERMISSIONS[1])
                 == PackageManager.PERMISSION_GRANTED) {
             this.locationManager.removeUpdates(locationListener);
         }

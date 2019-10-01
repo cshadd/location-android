@@ -2,16 +2,15 @@
     <string name="app_name">Location</string>
     <string name="title_activity_main">Location</string>
 
+    <string name="mapbox_access_token">sk.eyJ1IjoiY3NoYWRkcmFzIiwiYSI6ImNrMTg3cXhwNTFvbGwzb28zaXRjbW50amQifQ.MqPxJjqEivhyqdHXXy5aew</string>
+
     <string name="action_reset">Reset Last Location</string>
     <string name="action_close">Close</string>
 
     <string name="altitude">Altitude: %1$f m</string>
     <string name="distance">Distance Traveled: %1$f m / %2$f m</string>
-    <string name="last_altitude">Last Altitude: %1$f m</string>
-    <string name="last_average_light">Last Average Light Sensor Value: %1$f lux</string>
-    <string name="last_latitude">Last Latitude: %1$f &#176;</string>
-    <string name="last_location">Last Location Name:\n%1$s</string>
-    <string name="last_longitude">Last Longitude: %1$f &#176;</string>
+    <string name="last_average_light">Last Average Light Sensor Value %1$d: %2$f lux</string>
+    <string name="last_location">Last Location Name %1$d:\n%2$s</string>
     <string name="latitude">Latitude: %1$f &#176;</string>
     <string name="light">Light Sensor Value: %1$f lux</string>
     <string name="location">Location Name:\n%1$s</string>
