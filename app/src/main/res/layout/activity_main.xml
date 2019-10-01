@@ -7,39 +7,83 @@
     tools:context=".MainActivity">
 
     <TextView
+        android:id="@+id/location"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="@string/location" />
+
+    <TextView
         android:id="@+id/altitude"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:gravity="center"
         android:text="@string/altitude" />
 
     <TextView
         android:id="@+id/latitude"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:gravity="center"
         android:text="@string/latitude" />
 
     <TextView
         android:id="@+id/longitude"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:gravity="center"
         android:text="@string/longitude" />
 
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@android:color/darker_gray"/>
+
     <TextView
-        android:id="@+id/location"
+        android:id="@+id/last_location"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/location" />
+        android:gravity="center"
+        android:text="@string/last_location" />
+
+    <TextView
+        android:id="@+id/last_altitude"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="@string/last_altitude" />
+
+    <TextView
+        android:id="@+id/last_latitude"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="@string/last_latitude" />
+
+    <TextView
+        android:id="@+id/last_longitude"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="@string/last_longitude" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@android:color/darker_gray"/>
 
     <TextView
         android:id="@+id/light"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:gravity="center"
         android:text="@string/light" />
 
     <TextView
         android:id="@+id/distance"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:gravity="center"
         android:text="@string/distance" />
 
 </LinearLayout>
