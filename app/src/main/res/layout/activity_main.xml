@@ -137,11 +137,10 @@
         </LinearLayout>
     </ScrollView>
 
-    <com.mapbox.mapboxsdk.maps.MapView
-        android:id="@+id/mapView"
+    <fragment
+        android:id="@+id/fragment"
+        android:name="io.github.cshadd.location.Map"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        mapbox:mapbox_uiRotateGestures="false" />
-
+        android:layout_weight="1" />
 </LinearLayout>

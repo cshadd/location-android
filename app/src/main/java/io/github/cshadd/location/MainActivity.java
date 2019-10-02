@@ -1,8 +1,8 @@
 package io.github.cshadd.location;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -23,33 +23,16 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
-import com.mapbox.android.core.location.LocationEngine;
-import com.mapbox.android.core.location.LocationEngineCallback;
-import com.mapbox.android.core.location.LocationEngineProvider;
-import com.mapbox.android.core.location.LocationEngineRequest;
-import com.mapbox.android.core.location.LocationEngineResult;
 import com.mapbox.mapboxsdk.Mapbox;
-import com.mapbox.mapboxsdk.camera.CameraPosition;
 import com.mapbox.mapboxsdk.geometry.LatLng;
-import com.mapbox.mapboxsdk.location.LocationComponent;
-import com.mapbox.mapboxsdk.location.LocationComponentActivationOptions;
-import com.mapbox.mapboxsdk.location.modes.CameraMode;
-import com.mapbox.mapboxsdk.location.modes.RenderMode;
-import com.mapbox.mapboxsdk.maps.MapView;
-import com.mapbox.mapboxsdk.maps.MapboxMap;
-import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
-import com.mapbox.mapboxsdk.maps.Style;
 import java.io.IOException;
-import java.lang.ref.WeakReference;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 
 public class MainActivity
-        extends AppCompatActivity {
-    private static final int LOCATION_PERMISSION_REQUEST_CODE = 1234;
+        extends AppCompatActivity
+        implements Map.OnFragmentInteractionListener {
     private static final int MAX_LIGHT_STORAGE = 5000;
     private static final float RADIUS = 20;
 
@@ -60,12 +43,9 @@ public class MainActivity
     private List<Float> lightValues;
     private Sensor lightSensor;
     private SensorEventListener lightSensorListener;
-    private LocationEngine locationEngine;
     private LocationListener locationListener;
     private LocationManager locationManager;
-    private MapboxMap mapboxMap;
-    private MainActivityLocationCallback mapCallback;
-    private MapView mapView;
+    private PermissionManager pm;
     private Resources res;
     private SensorManager sensorManager;
     private TextView textAltitude;
@@ -86,46 +66,12 @@ public class MainActivity
     private TextView textLongitude;
     private Vibrator vibrator;
 
-    private final String[] PERMISSIONS = {
-            android.Manifest.permission.ACCESS_COARSE_LOCATION,
-            android.Manifest.permission.ACCESS_FINE_LOCATION,
-    };
-
     public MainActivity() {
         super();
         this.lightValues = new LinkedList<>();
+        this.history = new LinkedList<>();
+        this.pm = PermissionManager.getInstance();
         return;
-    }
-
-    private static class MainActivityLocationCallback
-            implements LocationEngineCallback<LocationEngineResult> {
-
-        private final WeakReference<MainActivity> activityWeakReference;
-
-        public MainActivityLocationCallback(MainActivity activity) {
-            this.activityWeakReference = new WeakReference<>(activity);
-            return;
-        }
-
-        @Override
-        public void onSuccess(LocationEngineResult result) {
-            final MainActivity activity = this.activityWeakReference.get();
-            if (activity != null) {
-                final Location location = result.getLastLocation();
-
-                if (location != null) {
-                    activity.mapboxMap.getLocationComponent().forceLocationUpdate(result.getLastLocation());
-                }
-            }
-            return;
-        }
-
-        @Override
-        public void onFailure(Exception exception) {
-            Log.e("NOGA", "Could not process map!");
-            exception.printStackTrace();
-            return;
-        }
     }
 
     private void addLocation() {
@@ -200,36 +146,6 @@ public class MainActivity
         return "NaN";
     }
 
-    private void enableMapLocationComponent(Style loadedMapStyle) {
-        final LocationComponent locationComponent = this.mapboxMap.getLocationComponent();
-        final LocationComponentActivationOptions locationComponentActivationOptions =
-                LocationComponentActivationOptions.builder(this, loadedMapStyle)
-                        .useDefaultLocationEngine(false)
-                        .build();
-        locationComponent.activateLocationComponent(locationComponentActivationOptions);
-        locationComponent.setLocationComponentEnabled(true);
-        locationComponent.setCameraMode(CameraMode.TRACKING);
-        locationComponent.setRenderMode(RenderMode.COMPASS);
-
-        this.initLocationEngine();
-        return;
-    }
-
-    private void initLocationEngine() {
-        this.locationEngine = LocationEngineProvider.getBestLocationEngine(this);
-
-        final LocationEngineRequest request = new LocationEngineRequest.Builder(1000L)
-                .setPriority(LocationEngineRequest.PRIORITY_HIGH_ACCURACY)
-                .setMaxWaitTime(5000L).build();
-        if (ActivityCompat.checkSelfPermission(this, this.PERMISSIONS[0])
-                == PackageManager.PERMISSION_GRANTED
-                && ActivityCompat.checkSelfPermission(this, this.PERMISSIONS[1])
-                == PackageManager.PERMISSION_GRANTED) {
-            locationEngine.requestLocationUpdates(request, this.mapCallback, super.getMainLooper());
-            locationEngine.getLastLocation(this.mapCallback);
-        }
-    }
-
     private void resetLastLocation(Location loc) {
         this.lastLocation = null;
         if (loc != null) {
@@ -263,36 +179,13 @@ public class MainActivity
 
         super.setContentView(R.layout.activity_main);
 
+        this.pm.requestLocationPermission(this);
+
         this.currentLocation = new Location("Point B");
         this.geocoder = new Geocoder(this, Locale.getDefault());
-        this.history = new LinkedList<>();
         this.clearHistory();
 
         this.locationManager = (LocationManager)super.getSystemService(Context.LOCATION_SERVICE);
-
-        this.mapCallback = new MainActivityLocationCallback(this);
-        this.mapView = (MapView)findViewById(R.id.mapView);
-        this.mapView.onCreate(savedInstanceState);
-
-        final Style.OnStyleLoaded mapViewStyleLoaded = new Style.OnStyleLoaded() {
-            @Override
-            public void onStyleLoaded(Style style) {
-                enableMapLocationComponent(style);
-                return;
-            }
-        };
-
-        final OnMapReadyCallback mapViewReadyCallback = new OnMapReadyCallback() {
-            @Override
-            public void onMapReady(MapboxMap map) {
-                mapboxMap = map;
-                mapboxMap.setCameraPosition(new CameraPosition.Builder().zoom(17).build());
-                mapboxMap.setStyle(Style.MAPBOX_STREETS, mapViewStyleLoaded);
-                return;
-            }
-        };
-
-        this.mapView.getMapAsync(mapViewReadyCallback);
 
         this.res = super.getResources();
         this.sensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
@@ -320,22 +213,6 @@ public class MainActivity
         this.textLongitude = (TextView)super.findViewById(R.id.longitude);
 
         this.vibrator = (Vibrator)super.getSystemService(Context.VIBRATOR_SERVICE);
-
-        if (ContextCompat.checkSelfPermission(this, this.PERMISSIONS[0])
-                != PackageManager.PERMISSION_GRANTED &&
-                ContextCompat.checkSelfPermission(this, this.PERMISSIONS[1])
-                        != PackageManager.PERMISSION_GRANTED) {
-            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
-                    this.PERMISSIONS[0])
-                    && ActivityCompat.shouldShowRequestPermissionRationale(this,
-                    this.PERMISSIONS[1])) {
-                Log.w("NOGA", "Requesting permissions!");
-            }
-            else {
-                ActivityCompat.requestPermissions(this, this.PERMISSIONS, this.LOCATION_PERMISSION_REQUEST_CODE);
-                Log.w("NOGA", "Requesting permissions!");
-            }
-        }
 
         this.lightSensorListener = new SensorEventListener() {
             @Override
@@ -425,24 +302,6 @@ public class MainActivity
     }
 
     @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if (this.locationEngine != null) {
-            this.locationEngine.removeLocationUpdates(this.mapCallback);
-        }
-        this.mapView.onDestroy();
-        return;
-    }
-
-
-    @Override
-    public void onLowMemory() {
-        super.onLowMemory();
-        this.mapView.onLowMemory();
-        return;
-    }
-
-    @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         super.onOptionsItemSelected(item);
         final int id = item.getItemId();
@@ -468,28 +327,11 @@ public class MainActivity
         return true;
     }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
-            if (grantResults.length > 0) {
-                for(int i = 0; i < grantResults.length; i++) {
-                    if(grantResults[i] != PackageManager.PERMISSION_GRANTED){
-                        return;
-                    }
-                }
-                this.initLocationEngine();
-            }
-        }
-    }
-
+    @SuppressLint("MissingPermission")
     @Override
     protected void onResume() {
         super.onResume();
-        this.mapView.onResume();
-        if (ActivityCompat.checkSelfPermission(this, this.PERMISSIONS[0])
-                == PackageManager.PERMISSION_GRANTED
-                && ActivityCompat.checkSelfPermission(this, this.PERMISSIONS[1])
-                == PackageManager.PERMISSION_GRANTED) {
+        if (pm.isLocationAllowed()) {
             this.locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
                     500, 1, this.locationListener);
             this.locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,
@@ -503,20 +345,9 @@ public class MainActivity
     }
 
     @Override
-    protected void onStart() {
-        super.onStart();
-        this.mapView.onStart();
-        return;
-    }
-
-    @Override
     protected void onStop() {
         super.onStop();
-        this.mapView.onStop();
-        if (ActivityCompat.checkSelfPermission(this, this.PERMISSIONS[0])
-                == PackageManager.PERMISSION_GRANTED
-                && ActivityCompat.checkSelfPermission(this, this.PERMISSIONS[1])
-                == PackageManager.PERMISSION_GRANTED) {
+        if (pm.isLocationAllowed()) {
             this.locationManager.removeUpdates(locationListener);
         }
         if (this.lightSensorListener != null) {
