@@ -4,13 +4,20 @@
     tools:context="io.github.cshadd.location.Main">
     <item
         android:id="@+id/action_reset"
-        android:icon="@android:drawable/alert_dark_frame"
+        android:icon="@android:drawable/ic_menu_revert"
         android:orderInCategory="100"
         android:title="@string/action_reset"
-        app:showAsAction="never" />
+        app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/action_manual"
+        android:icon="@android:drawable/ic_menu_mylocation"
+        android:orderInCategory="100"
+        android:title="@string/action_manual"
+        app:showAsAction="ifRoom" />
     <item
         android:id="@+id/action_close"
+        android:icon="@android:drawable/ic_menu_close_clear_cancel"
         android:orderInCategory="100"
         android:title="@string/action_close"
-        app:showAsAction="never" />
+        app:showAsAction="ifRoom" />
 </menu>

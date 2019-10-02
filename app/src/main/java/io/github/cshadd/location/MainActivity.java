@@ -45,16 +45,15 @@ import java.lang.ref.WeakReference;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Queue;
 
 public class MainActivity
         extends AppCompatActivity {
     private static final int MAX_LIGHT_STORAGE = 5000;
-    private static final float RADIUS = 30;
+    private static final float RADIUS = 20;
 
     private Location currentLocation;
     private Geocoder geocoder;
-    private List<HistoricalElement> history;
+    private LinkedList<HistoricalElement> history;
     private Location lastLocation;
     private List<Float> lightValues;
     private Sensor lightSensor;
@@ -127,7 +126,49 @@ public class MainActivity
         }
     }
 
-        private Float computeAverage(List<Float> values) {
+    private void addLocation() {
+        if (this.history.size() >= 5) {
+            this.history.removeLast();
+        }
+        this.history.addFirst(new HistoricalElement(this.computeLightAverage(this.lightValues),
+                this.computeLocationName(this.currentLocation)));
+        this.resetLastLocation(this.currentLocation);
+        this.lightValues.clear();
+        return;
+    }
+
+    private void clearHistory() {
+        this.history.clear();
+        this.history.add(new HistoricalElement());
+        this.history.add(new HistoricalElement());
+        this.history.add(new HistoricalElement());
+        this.history.add(new HistoricalElement());
+        this.history.add(new HistoricalElement());
+        return;
+    }
+
+    private void computeHistory() {
+        final HistoricalElement h1 = history.get(0);
+        final HistoricalElement h2 = history.get(1);
+        final HistoricalElement h3 = history.get(2);
+        final HistoricalElement h4 = history.get(3);
+        final HistoricalElement h5 = history.get(4);
+
+        this.textLastAverageLight1.setText(res.getString(R.string.last_average_light, 1, h1.light));
+        this.textLastAverageLight2.setText(res.getString(R.string.last_average_light, 2, h2.light));
+        this.textLastAverageLight3.setText(res.getString(R.string.last_average_light, 3, h3.light));
+        this.textLastAverageLight4.setText(res.getString(R.string.last_average_light, 4, h4.light));
+        this.textLastAverageLight5.setText(res.getString(R.string.last_average_light, 5, h5.light));
+
+        this.textLastLocation1.setText(res.getString(R.string.last_location, 1, h1.location));
+        this.textLastLocation2.setText(res.getString(R.string.last_location, 2, h2.location));
+        this.textLastLocation3.setText(res.getString(R.string.last_location, 3, h3.location));
+        this.textLastLocation4.setText(res.getString(R.string.last_location, 4, h4.location));
+        this.textLastLocation5.setText(res.getString(R.string.last_location, 5, h5.location));
+        return;
+    }
+
+    private Float computeLightAverage(List<Float> values) {
         Float sum = 0f;
         if (!values.isEmpty()) {
             for (Float value : values) {
@@ -136,16 +177,6 @@ public class MainActivity
             return sum / values.size();
         }
         return sum;
-    }
-
-    private void clearHistory() {
-        this.history.clear();
-        history.add(new HistoricalElement());
-        history.add(new HistoricalElement());
-        history.add(new HistoricalElement());
-        history.add(new HistoricalElement());
-        history.add(new HistoricalElement());
-        return;
     }
 
     private String computeLocationName(Location loc) {
@@ -358,35 +389,13 @@ public class MainActivity
                     resetLastLocation(currentLocation);
                 }
 
-                final HistoricalElement h1 = history.get(0);
-                final HistoricalElement h2 = history.get(1);
-                final HistoricalElement h3 = history.get(2);
-                final HistoricalElement h4 = history.get(3);
-                final HistoricalElement h5 = history.get(4);
-
-                textLastAverageLight1.setText(res.getString(R.string.last_average_light, 1, h1.light));
-                textLastAverageLight2.setText(res.getString(R.string.last_average_light, 2, h2.light));
-                textLastAverageLight3.setText(res.getString(R.string.last_average_light, 3, h3.light));
-                textLastAverageLight4.setText(res.getString(R.string.last_average_light, 4, h4.light));
-                textLastAverageLight5.setText(res.getString(R.string.last_average_light, 5, h5.light));
-
-                textLastLocation1.setText(res.getString(R.string.last_location, 1, h1.location));
-                textLastLocation2.setText(res.getString(R.string.last_location, 2, h2.location));
-                textLastLocation3.setText(res.getString(R.string.last_location, 3, h3.location));
-                textLastLocation4.setText(res.getString(R.string.last_location, 4, h4.location));
-                textLastLocation5.setText(res.getString(R.string.last_location, 5, h5.location));
-
                 float distance = lastLocation.distanceTo(currentLocation);
                 if (distance >= RADIUS) {
-                    distance = RADIUS;
-                    if (history.size() >= 5) {
-                        history.remove(4);
-                    }
-                    history.add(0, new HistoricalElement(computeAverage(lightValues),
-                            computeLocationName(currentLocation)));
-                    resetLastLocation(currentLocation);
-                    lightValues.clear();
+                    distance = 0;
+                    addLocation();
                 }
+
+                computeHistory();
 
                 textDistance.setText(res.getString(R.string.distance, distance, RADIUS));
                 return;
@@ -425,6 +434,7 @@ public class MainActivity
     public void onLowMemory() {
         super.onLowMemory();
         this.mapView.onLowMemory();
+        return;
     }
 
     @Override
@@ -436,11 +446,16 @@ public class MainActivity
             final Intent intent = new Intent(Intent.ACTION_MAIN);
             intent.addCategory(Intent.CATEGORY_HOME);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(intent);
+            super.startActivity(intent);
+        }
+        else if (id == R.id.action_manual) {
+            this.addLocation();
+            this.computeHistory();
         }
         else if (id == R.id.action_reset) {
             this.resetLastLocation(this.currentLocation);
             this.clearHistory();
+            this.computeHistory();
         }
         else {
             return super.onOptionsItemSelected(item);
