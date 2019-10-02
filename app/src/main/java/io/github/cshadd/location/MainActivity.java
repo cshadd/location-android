@@ -32,6 +32,7 @@ import com.mapbox.android.core.location.LocationEngineRequest;
 import com.mapbox.android.core.location.LocationEngineResult;
 import com.mapbox.mapboxsdk.Mapbox;
 import com.mapbox.mapboxsdk.camera.CameraPosition;
+import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.mapboxsdk.location.LocationComponent;
 import com.mapbox.mapboxsdk.location.LocationComponentActivationOptions;
 import com.mapbox.mapboxsdk.location.modes.CameraMode;
@@ -199,23 +200,17 @@ public class MainActivity
     }
 
     private void enableMapLocationComponent(Style loadedMapStyle) {
-        if (ActivityCompat.checkSelfPermission(this, this.PERMISSIONS[0])
-                == PackageManager.PERMISSION_GRANTED
-                && ActivityCompat.checkSelfPermission(this, this.PERMISSIONS[1])
-                == PackageManager.PERMISSION_GRANTED) {
+        final LocationComponent locationComponent = this.mapboxMap.getLocationComponent();
+        final LocationComponentActivationOptions locationComponentActivationOptions =
+                LocationComponentActivationOptions.builder(this, loadedMapStyle)
+                        .useDefaultLocationEngine(false)
+                        .build();
+        locationComponent.activateLocationComponent(locationComponentActivationOptions);
+        locationComponent.setLocationComponentEnabled(true);
+        locationComponent.setCameraMode(CameraMode.TRACKING);
+        locationComponent.setRenderMode(RenderMode.COMPASS);
 
-            final LocationComponent locationComponent = this.mapboxMap.getLocationComponent();
-            final LocationComponentActivationOptions locationComponentActivationOptions =
-                    LocationComponentActivationOptions.builder(this, loadedMapStyle)
-                            .useDefaultLocationEngine(false)
-                            .build();
-            locationComponent.activateLocationComponent(locationComponentActivationOptions);
-            locationComponent.setLocationComponentEnabled(true);
-            locationComponent.setCameraMode(CameraMode.TRACKING);
-            locationComponent.setRenderMode(RenderMode.COMPASS);
-
-            this.initLocationEngine();
-        }
+        this.initLocationEngine();
         return;
     }
 
@@ -225,9 +220,13 @@ public class MainActivity
         final LocationEngineRequest request = new LocationEngineRequest.Builder(1000L)
                 .setPriority(LocationEngineRequest.PRIORITY_HIGH_ACCURACY)
                 .setMaxWaitTime(5000L).build();
-
-        locationEngine.requestLocationUpdates(request, this.mapCallback, super.getMainLooper());
-        locationEngine.getLastLocation(this.mapCallback);
+        if (ActivityCompat.checkSelfPermission(this, this.PERMISSIONS[0])
+                == PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(this, this.PERMISSIONS[1])
+                == PackageManager.PERMISSION_GRANTED) {
+            locationEngine.requestLocationUpdates(request, this.mapCallback, super.getMainLooper());
+            locationEngine.getLastLocation(this.mapCallback);
+        }
     }
 
     private void resetLastLocation(Location loc) {
@@ -378,6 +377,11 @@ public class MainActivity
                 currentLocation.setAltitude(altitude);
                 currentLocation.setLatitude(latitude);
                 currentLocation.setLongitude(longitude);
+
+                final LatLng mapViewLocation = new LatLng();
+                mapViewLocation.setAltitude(altitude);
+                mapViewLocation.setLatitude(latitude);
+                mapViewLocation.setLongitude(longitude);
 
                 final String locationName = computeLocationName(currentLocation);
                 textAltitude.setText(res.getString(R.string.altitude, altitude));
