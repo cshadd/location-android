@@ -2,8 +2,6 @@
     <string name="app_name">Location</string>
     <string name="title_activity_main">Location</string>
 
-    <string name="mapbox_access_token">sk.eyJ1IjoiY3NoYWRkcmFzIiwiYSI6ImNrMTg3cXhwNTFvbGwzb28zaXRjbW50amQifQ.MqPxJjqEivhyqdHXXy5aew</string>
-
     <string name="action_reset">Reset</string>
     <string name="action_manual">Manual</string>
     <string name="action_close">Close</string>
