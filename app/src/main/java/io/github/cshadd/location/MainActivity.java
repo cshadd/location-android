@@ -49,6 +49,7 @@ import java.util.Locale;
 
 public class MainActivity
         extends AppCompatActivity {
+    private static final int LOCATION_PERMISSION_REQUEST_CODE = 1234;
     private static final int MAX_LIGHT_STORAGE = 5000;
     private static final float RADIUS = 20;
 
@@ -331,7 +332,7 @@ public class MainActivity
                 Log.w("NOGA", "Requesting permissions!");
             }
             else {
-                ActivityCompat.requestPermissions(this, PERMISSIONS, 1);
+                ActivityCompat.requestPermissions(this, this.PERMISSIONS, this.LOCATION_PERMISSION_REQUEST_CODE);
                 Log.w("NOGA", "Requesting permissions!");
             }
         }
@@ -465,6 +466,20 @@ public class MainActivity
             return super.onOptionsItemSelected(item);
         }
         return true;
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
+            if (grantResults.length > 0) {
+                for(int i = 0; i < grantResults.length; i++) {
+                    if(grantResults[i] != PackageManager.PERMISSION_GRANTED){
+                        return;
+                    }
+                }
+                this.initLocationEngine();
+            }
+        }
     }
 
     @Override
