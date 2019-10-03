@@ -13,6 +13,7 @@ import com.mapbox.android.core.location.LocationEngineCallback;
 import com.mapbox.android.core.location.LocationEngineProvider;
 import com.mapbox.android.core.location.LocationEngineRequest;
 import com.mapbox.android.core.location.LocationEngineResult;
+import com.mapbox.mapboxsdk.Mapbox;
 import com.mapbox.mapboxsdk.camera.CameraPosition;
 import com.mapbox.mapboxsdk.location.LocationComponent;
 import com.mapbox.mapboxsdk.location.LocationComponentActivationOptions;
@@ -53,7 +54,6 @@ public class Map extends Fragment {
             final Map activity = this.activityWeakReference.get();
             if (activity != null) {
                 final Location location = result.getLastLocation();
-
                 if (location != null && activity.mapboxMap != null) {
                     activity.mapboxMap.getLocationComponent().forceLocationUpdate(result.getLastLocation());
                 }
@@ -81,7 +81,7 @@ public class Map extends Fragment {
     private void enableMapLocationComponent(Style loadedMapStyle) {
         final LocationComponent locationComponent = this.mapboxMap.getLocationComponent();
         final LocationComponentActivationOptions locationComponentActivationOptions =
-                LocationComponentActivationOptions.builder(getContext(), loadedMapStyle)
+                LocationComponentActivationOptions.builder(super.getContext(), loadedMapStyle)
                         .useDefaultLocationEngine(false)
                         .build();
         locationComponent.activateLocationComponent(locationComponentActivationOptions);
@@ -94,13 +94,13 @@ public class Map extends Fragment {
     }
 
     private void initLocationEngine() {
-        this.locationEngine = LocationEngineProvider.getBestLocationEngine(getContext());
+        this.locationEngine = LocationEngineProvider.getBestLocationEngine(super.getContext());
 
         final LocationEngineRequest request = new LocationEngineRequest.Builder(1000L)
                 .setPriority(LocationEngineRequest.PRIORITY_HIGH_ACCURACY)
                 .setMaxWaitTime(5000L).build();
         if (this.pm.isLocationAllowed()) {
-            locationEngine.requestLocationUpdates(request, this.mapCallback, getContext().getMainLooper());
+            locationEngine.requestLocationUpdates(request, this.mapCallback, super.getContext().getMainLooper());
             locationEngine.getLastLocation(this.mapCallback);
         }
     }
@@ -109,6 +109,7 @@ public class Map extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         this.pm.requestLocationPermission(this);
+        Mapbox.getInstance(super.getContext(), super.getString(R.string.mapbox_access_token));
         Log.i("KAPLAN", "I love maps!");
         return;
     }
@@ -183,6 +184,7 @@ public class Map extends Fragment {
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         this.pm.onRequestLocationPermissionsResultHandler(requestCode, permissions, grantResults);
         if (this.pm.isLocationAllowed()) {
             this.initLocationEngine();

@@ -23,7 +23,6 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
-import com.mapbox.mapboxsdk.Mapbox;
 import com.mapbox.mapboxsdk.geometry.LatLng;
 import java.io.IOException;
 import java.util.LinkedList;
@@ -174,9 +173,6 @@ public class MainActivity
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        Mapbox.getInstance(this, this.getString(R.string.mapbox_access_token));
-
         super.setContentView(R.layout.activity_main);
 
         this.pm.requestLocationPermission(this);
@@ -296,7 +292,7 @@ public class MainActivity
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         super.onCreateOptionsMenu(menu);
-        final MenuInflater inflater = getMenuInflater();
+        final MenuInflater inflater = super.getMenuInflater();
         inflater.inflate(R.menu.menu_main, menu);
         return true;
     }
